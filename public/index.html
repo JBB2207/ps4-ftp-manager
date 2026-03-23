@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PS4 FTP Manager</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+</head>
+<body>
+
+<div id="contextMenu">
+    <div class="menu-option" id="menuRename">Rename     <span class="menu-shortcut">F2</span></div>
+    <div class="menu-option" id="menuMkdir">New folder  <span class="menu-shortcut">F4</span></div>
+    <div class="menu-separator"></div>
+    <div class="menu-option" id="menuCut">Cut           <span class="menu-shortcut">Ctrl+X</span></div>
+    <div class="menu-option" id="menuCopy">Copy         <span class="menu-shortcut">Ctrl+C</span></div>
+    <div class="menu-option" id="menuPaste">Paste       <span class="menu-shortcut">Ctrl+V</span></div>
+    <div class="menu-separator"></div>
+    <div class="menu-option danger" id="menuDelete">Delete <span class="menu-shortcut">Del</span></div>
+</div>
+
+<header>
+    <div class="header-brand">
+        <div class="header-title">ps4 ftp manager</div>
+        <div class="header-sub">file transfer protocol</div>
+    </div>
+    <div class="connect-section">
+        <input
+            type="text"
+            class="conn-input"
+            id="ipInput"
+            placeholder="192.168.1.XXX"
+            spellcheck="false"
+            autocomplete="off"
+        />
+        <input
+            type="text"
+            class="conn-input"
+            id="portInput"
+            placeholder="2121"
+            value="2121"
+            spellcheck="false"
+            autocomplete="off"
+        />
+        <button class="conn-btn" id="connectBtn">Connect</button>
+    </div>
+</header>
+
+<div class="status-bar">
+    <div id="statusDot"></div>
+    <span id="statusText">not connected</span>
+</div>
+
+<main>
+    <div class="panel-left">
+        <div class="panel-header">
+            <span class="panel-title">SEND FILES TO PS4</span>
+        </div>
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <span class="drop-title">Drop files here</span>
+            <span class="drop-sub">Supports all files up to any size</span>
+            <input type="file" id="fileInput" multiple style="display:none">
+            <button class="drop-browse" id="browseBtn">Browse files</button>
+        </div>
+        <div class="panel-header">
+            <div>
+                <input id="selectAllCheckbox" type="checkbox">
+                <span class="panel-title">select all</span>
+            </div>
+            <div>
+                <button class="send-selected-btn" id="sendSelectedBtn">SEND SELECTED</button>
+                <button class="remove-selected-btn" id="removeSelectedBtn">REMOVE SELECTED</button>
+            </div>
+        </div>
+        <div id="fileList"></div>
+    </div>
+    <div class="panel-right">
+        <div class="panel-header">
+            <span class="panel-title">PS4 FILE SYSTEM</span>
+        </div>
+        <div class="fs-toolbar">
+            <button class="fs-nav-btn" id="upRowBtn">↑ up</button>
+            <button class="fs-nav-btn" id="usePathBtn">use path</button>
+            <input type="text" id="fsPathInput" value=":/">
+        </div>
+        <div id="fsList"></div>
+        <div class="activity-log-section">
+            <div class="activity-log-header">
+                <span class="panel-title">ACTIVITY LOG</span>
+                <div class="log-clear-btn" id="clearLogBtn">clear</div>
+            </div>
+            <div id="logBody"></div>
+        </div>
+    </div>
+</main>
+</body>
+<script type="module" src="scripts/connect.js"></script>
+</html>
