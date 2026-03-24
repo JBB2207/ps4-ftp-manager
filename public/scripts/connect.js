@@ -7,6 +7,23 @@ const ip      = () => $('ipInput').value.trim();
 const port    = () => $('portInput').value.trim();
 const connBtn = $('connectBtn');
 
+/* ── PERSISTENT SETTINGS ── */
+const savedSettings = 'ftpSettings';
+
+function saveSettings() {
+    localStorage.setItem(savedSettings, JSON.stringify({ ip: ip(), port: port() }));
+}
+
+function loadSettings() {
+    try {
+        const settings = JSON.parse(localStorage.getItem(savedSettings));
+        if (settings) {
+            if (settings.ip) $('ipInput').value = settings.ip;
+            if (settings.port) $('portInput').value = settings.port;
+        }
+    } catch { /* ignore */ }
+}
+
 function setStatus(state) {
     const isConn   = state === 'connected';
     const isTrying = state === 'trying';
@@ -36,6 +53,7 @@ export async function tryConnect() {
         })).json();
 
         if (data.success) {
+            saveSettings();
             setStatus('connected');
             browseTo('/');
             log(`Connected to ${ip()}:${port()}`);
@@ -59,5 +77,6 @@ export async function disconnect() {
 }
 
 /* ── INIT ── */
+loadSettings();
 getStatus().then(ok => { setStatus(ok ? 'connected' : 'off'); if (ok) browseTo(currentPath); });
 connBtn.addEventListener('click', tryConnect);

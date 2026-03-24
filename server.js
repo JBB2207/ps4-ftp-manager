@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.static('./public'));
 
 let uploadClient = null, browseClient = null, editClient = null;
-let isConnected  = false, connHost = '', connPort = 21;
+let isConnected  = false, connHost = '', connPort = 2121;
 
 const activeUploads   = new Map();
 const progressClients = new Map();
@@ -31,7 +31,21 @@ const uniqueName = async (client, dir, name) => {
     return `${base} (${n})${ext}`;
 };
 
-const reconnect = () => mkClient(connHost, connPort).then(c => uploadClient = c);
+/* ── RECONNECT ── */
+const reconnectUpload = () => mkClient(connHost, connPort).then(c => (uploadClient = c));
+const reconnectBrowse = () => mkClient(connHost, connPort).then(c => (browseClient = c));
+const reconnectEdit   = () => mkClient(connHost, connPort).then(c => (editClient   = c));
+const reconnect = reconnectUpload;
+
+const withBrowse = async fn => {
+    try { await browseClient.pwd(); } catch { await reconnectBrowse(); }
+    return fn(browseClient);
+};
+
+const withEdit = async fn => {
+    try { await editClient.pwd(); } catch { await reconnectEdit(); }
+    return fn(editClient);
+};
 
 const wrap = fn => async (req, res) => {
     try { await fn(req, res); }
@@ -62,33 +76,41 @@ app.get('/api/status', (_, res) => res.json({ connected: isConnected }));
 /* ── FILESYSTEM ── */
 app.get('/api/list', wrap(async (req, res) => {
     const p = req.query.path || '/';
-    const files = (await browseClient.list(p)).map(f => ({ name: f.name, type: f.type }));
-    res.json({ success: true, files, path: p });
+    const files = await withBrowse(c => c.list(p));
+    res.json({ success: true, files: files.map(f => ({ name: f.name, type: f.type })), path: p });
 }));
 
-app.post('/api/mkdir',  wrap(async (req, res) => { await editClient.ensureDir(req.body.path);                              res.json({ success: true }); }));
-app.post('/api/rename', wrap(async (req, res) => { await editClient.rename(req.body.oldPath, req.body.newPath);            res.json({ success: true }); }));
+app.post('/api/mkdir',  wrap(async (req, res) => {
+    await withEdit(c => c.ensureDir(req.body.path));
+    res.json({ success: true });
+}));
+
+app.post('/api/rename', wrap(async (req, res) => {
+    await withEdit(c => c.rename(req.body.oldPath, req.body.newPath));
+    res.json({ success: true });
+}));
+
 app.post('/api/delete', wrap(async (req, res) => {
-    req.body.type === 2
-        ? await editClient.removeDir(req.body.path)
-        : await editClient.remove(req.body.path);
+    await withEdit(c =>
+        req.body.type === 2 ? c.removeDir(req.body.path) : c.remove(req.body.path)
+    );
     res.json({ success: true });
 }));
 
 app.post('/api/copy', wrap(async (req, res) => {
     const { srcPath, destDir, type } = req.body;
-    const safeName = await uniqueName(editClient, destDir, path.basename(srcPath));
+    const safeName = await withEdit(c => uniqueName(c, destDir, path.basename(srcPath)));
     const destPath = path.posix.join(destDir, safeName);
     const tmp      = path.join(os.tmpdir(), `ftpcopy-${Date.now()}`);
 
     if (type === 2) {
-        await editClient.downloadToDir(tmp, srcPath);
-        await editClient.uploadFromDir(tmp, destPath);
+        await withEdit(c => c.downloadToDir(tmp, srcPath));
+        await withEdit(c => c.uploadFromDir(tmp, destPath));
         fs.rmSync(tmp, { recursive: true, force: true });
     } else {
         const tmpFile = `${tmp}-${path.basename(srcPath)}`;
-        await editClient.downloadTo(tmpFile, srcPath);
-        await editClient.uploadFrom(tmpFile, destPath);
+        await withEdit(c => c.downloadTo(tmpFile, srcPath));
+        await withEdit(c => c.uploadFrom(tmpFile, destPath));
         fs.unlink(tmpFile, () => {});
     }
     res.json({ success: true });
